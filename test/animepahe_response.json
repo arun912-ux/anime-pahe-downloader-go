@@ -1,0 +1,106 @@
+{
+	"total": 12,
+	"per_page": 8,
+	"current_page": 1,
+	"last_page": 2,
+	"from": 1,
+	"to": 8,
+	"data": [
+		{
+			"id": 2670,
+			"title": "Inazuma Eleven",
+			"type": "TV",
+			"episodes": 127,
+			"status": "Finished Airing",
+			"season": "Fall",
+			"year": 2008,
+			"score": 7.74,
+			"poster": "https://i.animepahe.ru/posters/8bd3b1c4153bcaa54714db6dd691903abedbc889d46d8114ab8e58f3e4c40034.jpg",
+			"session": "7933f5bb-3b60-2597-0a3c-cf4be3331229"
+		},
+		{
+			"id": 3710,
+			"title": "Inazuma Eleven: Reloaded - Soccer no Henkaku",
+			"type": "Special",
+			"episodes": 1,
+			"status": "Finished Airing",
+			"season": "Winter",
+			"year": 2018,
+			"score": 6.99,
+			"poster": "https://i.animepahe.ru/posters/4de266f9ff89da805aad017b50cce522bc3bbc357c957c74a671fc5b992988ca.jpg",
+			"session": "fd9b9e24-c41a-8a37-a0a6-6b6b54c9cf34"
+		},
+		{
+			"id": 2676,
+			"title": "Inazuma Eleven: Saikyou Gundan Ogre Shuurai",
+			"type": "Movie",
+			"episodes": 1,
+			"status": "Finished Airing",
+			"season": "Winter",
+			"year": 2011,
+			"score": 7.4,
+			"poster": "https://i.animepahe.ru/posters/86da23ce5e8206f273b4328ac87e7dd21b330fa3ede06947454d506de9398ec3.jpg",
+			"session": "ed4b09a3-48d6-cc7f-80bd-c38e85f1cf71"
+		},
+		{
+			"id": 3711,
+			"title": "Inazuma Eleven: Outer Code",
+			"type": "ONA",
+			"episodes": 6,
+			"status": "Finished Airing",
+			"season": "Fall",
+			"year": 2016,
+			"score": 6.8,
+			"poster": "https://i.animepahe.ru/posters/557c34b8e9cdd51b206eee3fcb89e39f23da660595664ae51a6168f9039ff529.jpg",
+			"session": "d9ff84e1-6270-5368-9eb2-5aa008fe2ffc"
+		},
+		{
+			"id": 2677,
+			"title": "Inazuma Eleven Go",
+			"type": "TV",
+			"episodes": 47,
+			"status": "Finished Airing",
+			"season": "Spring",
+			"year": 2011,
+			"score": 7.01,
+			"poster": "https://i.animepahe.ru/posters/668c1b55f2a78ac45d1ba543c034f2236593ba7fdad934f49e21e44ff4e74de6.jpg",
+			"session": "91bdead4-89c1-ca65-bf37-de41523d99e5"
+		},
+		{
+			"id": 2679,
+			"title": "Inazuma Eleven Go: Chrono Stone",
+			"type": "TV",
+			"episodes": 51,
+			"status": "Finished Airing",
+			"season": "Spring",
+			"year": 2012,
+			"score": 7.28,
+			"poster": "https://i.animepahe.ru/posters/c7558382cf4613f5c71216985839b094fd1278a1a5cdd9a7693c2545843bdd2a.jpg",
+			"session": "5f8b24cd-4f52-03bc-4ed1-a71c5098752f"
+		},
+		{
+			"id": 2680,
+			"title": "Inazuma Eleven Go: Galaxy",
+			"type": "TV",
+			"episodes": 43,
+			"status": "Finished Airing",
+			"season": "Spring",
+			"year": 2013,
+			"score": 6.65,
+			"poster": "https://i.animepahe.ru/posters/c2e8f7eb10f55cf2997cc63b3365082ff37b1bcde8e4ef42319ae6d46d771cc9.jpg",
+			"session": "edfaf7a9-1f90-b827-0f94-f9b2b3f28c72"
+		},
+		{
+			"id": 2557,
+			"title": "Inazuma Eleven: Ares no Tenbin",
+			"type": "TV",
+			"episodes": 26,
+			"status": "Finished Airing",
+			"season": "Spring",
+			"year": 2018,
+			"score": 6.69,
+			"poster": "https://i.animepahe.ru/posters/091212d49cd2e955091dfc1df46240f422de1d9ab675069bc6da3b94013f4946.jpg",
+			"session": "c9093c28-a0dd-622e-5654-9e39574feb73"
+		}
+	]
+}
