@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"regexp"
@@ -15,9 +15,9 @@ var host string = "https://animepahe.ru/"
 
 var num_of_cores int = runtime.NumCPU() / 2
 
-var headers map[string]string = map[string]string{
-	"Cookie": "__ddg8_=9KCSctc4iOruShN0; __ddgid_=7lWyc52yRS7YgOpW; __ddgmark_=wfZpnxacF2nXdVTE; __ddg2_=qtEE5nKN3PCJ7c2Z; __ddg1_=5Qh2v4L5z7LpVnQx; __ddg3_=fHwWwZbYpI3fHcQx",
-}
+// var headers map[string]string = map[string]string{
+// 	"Cookie": "__ddg8_=9KCSctc4iOruShN0; __ddgid_=7lWyc52yRS7YgOpW; __ddgmark_=wfZpnxacF2nXdVTE; __ddg2_=qtEE5nKN3PCJ7c2Z; __ddg1_=5Qh2v4L5z7LpVnQx; __ddg3_=fHwWwZbYpI3fHcQx",
+// }
 
 type PaheResponse struct {
 	Total int              `json:"total"`
@@ -67,9 +67,9 @@ func makeRequest(url string) ([]byte, error) {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 
-	return body, nil
+	return body, err
 }
 
 func SearchAnime(name string) ([]SearchResponse, int) {
@@ -123,17 +123,16 @@ func FetchEpisodeIds(anime_id string, episode_range [2]int) map[int]string {
 	}
 
 	fmt.Println("Episode Numbers : ", episode_numbers)
-	fmt.Println("Pages: ", pages)
+	// fmt.Println("Pages: ", pages)
 
 	episode_id_number_map := make(map[int]string)
 
 	for i := pages[0] - 1; i <= pages[1]+1; i++ {
 
-		fmt.Println("Page: ", i)
+		// fmt.Println("Page: ", i)
 
 		url := host + "api?m=release&id=" + anime_id + "&sort=episode_asc&page=" + fmt.Sprint(i)
 		body, err := makeRequest(url)
-
 		if err != nil {
 			fmt.Println("Error retrieving episodes : ", err)
 		}
@@ -174,7 +173,7 @@ func FetchEpisodeLinks(animeId string, episode_ids map[int]string) map[string][]
 		// 	fmt.Println("Error retrieving episodes link : ", err)
 		// }
 
-		response_channel := make(chan string, 8)
+		response_channel := make(chan string, num_of_cores)
 		go func() {
 			body, err := makeRequest(url)
 			if err != nil {
@@ -185,28 +184,33 @@ func FetchEpisodeLinks(animeId string, episode_ids map[int]string) map[string][]
 
 		// html_body := string(body)
 		html_body := <-response_channel
-		pattern := `href="(?:([^\"]+)" target="_blank" class="dropdown-item">(?:[^\&]+)&middot; ([^\<]+))(?:<span class="badge badge-primary">(?:[^\&]+)</span> <span class="badge badge-warning text-capitalize">([^\<]+))?`
+		// fmt.Println("HML : ", html_body)
+		// pattern := `href="(?:([^\"]+)" target="_blank" class="dropdown-item">(?:[^\&]+)&middot; ([^\<]+))(?:<span class="badge badge-primary">(?:[^\&]+)</span> <span class="badge badge-warning text-capitalize">([^\<]+))?`
+		pattern := `href="(?:([^\"]+)" target="_blank" class="dropdown-item">(?:[^\&]+)&middot; (\d{3,}p) \((\d+(MB|GB))\))(?: <span class="badge badge-primary">([^\<]+)<\/span>)?(?: <span class="badge badge-warning text-capitalize">([a-zA-Z]+))?`
 		regex := regexp.MustCompile(pattern)
 
 		matches := regex.FindAllStringSubmatch(html_body, -1)
+		if len(matches) == 0 {
+			panic("regex and links not found.!")
+		}
+		// fmt.Println("Matches:", matches)
 
 		for _, match := range matches {
 			// fmt.Println("Match: ", match)
 			// for _, s := range match {
 			// 	fmt.Println(s)
 			// }
-			splits := strings.Split(match[2], " ")
-			quality := splits[0]
-			file_size := strings.ReplaceAll(splits[1], "(", "")
-			file_size = strings.ReplaceAll(file_size, ")", "")
+			link := match[1]
+			quality := match[2]
+			file_size := match[3]
 			language := ""
-			if len(match) > 2 {
-				language = match[3]
+			if len(match) > 6 {
+				language = match[6]
 			}
 			if language == "" {
 				language = "jpn"
 			}
-			fmt.Println("Episode:", i, "Link:", match[1], "Quality:", quality, "Language:", language, "Size:", file_size)
+			fmt.Println("Episode:", i, "Link:", link, "Quality:", quality, "Language:", language, "Size:", file_size)
 
 			lang_episode_map[language] = append(lang_episode_map[language], Episode{Url: match[1], Number: i, Quality: quality, FileSize: file_size})
 		}
@@ -217,7 +221,7 @@ func FetchEpisodeLinks(animeId string, episode_ids map[int]string) map[string][]
 	}
 
 	// fmt.Printf("%+v", lang_episode_map)
-	log.Default().Printf("%v", lang_episode_map)
+	log.Default().Printf("lang_episode_map: \n%v", lang_episode_map)
 
 	return lang_episode_map
 
@@ -238,12 +242,11 @@ func FetchEpisodeIdsWithGoRoutine(anime_id string, episode_range [2]int) map[int
 	}
 
 	fmt.Println("Episode Numbers : ", episode_numbers)
-	fmt.Println("Pages: ", pages)
+	// fmt.Println("Pages: ", pages)
 
 	episode_id_number_map := make(map[int]string)
 
 	response_channel := make(chan []byte, 8)
-	
 
 	for i := pages[0] - 1; i <= pages[1]+1; i++ {
 
@@ -293,7 +296,8 @@ func FetchEpisodeLinksWithGoRoutine(animeId string, episode_ids map[int]string) 
 	episode_links := make(map[int]string)
 
 	lang_episode_map := make(map[string][]Episode)
-	response_channel := make(chan string, 8)
+
+	response_channel := make(chan string, num_of_cores)
 
 	for i, episode_id := range episode_ids {
 		url := host + "play/" + animeId + "/" + episode_id
@@ -311,7 +315,7 @@ func FetchEpisodeLinksWithGoRoutine(animeId string, episode_ids map[int]string) 
 	for i := range episode_ids {
 		// html_body := string(body)
 		html_body := <-response_channel
-		pattern := `href="(?:([^\"]+)" target="_blank" class="dropdown-item">(?:[^\&]+)&middot; ([^\<]+))(?:<span class="badge badge-primary">(?:[^\&]+)</span> <span class="badge badge-warning text-capitalize">([^\<]+))?`
+		pattern := `href="(?:([^\"]+)" target="_blank" class="dropdown-item">(?:[^\&]+)&middot; (\d{3,}p) \((\d+(MB|GB))\))(?: <span class="badge badge-primary">([^\<]+)<\/span>)?(?: <span class="badge badge-warning text-capitalize">([a-zA-Z]+))?`
 		regex := regexp.MustCompile(pattern)
 
 		matches := regex.FindAllStringSubmatch(html_body, -1)
@@ -321,18 +325,18 @@ func FetchEpisodeLinksWithGoRoutine(animeId string, episode_ids map[int]string) 
 			// for _, s := range match {
 			// 	fmt.Println(s)
 			// }
-			splits := strings.Split(match[2], " ")
-			quality := splits[0]
-			file_size := strings.ReplaceAll(splits[1], "(", "")
-			file_size = strings.ReplaceAll(file_size, ")", "")
+			link := match[1]
+			quality := match[2]
+			file_size := match[3]
 			language := ""
-			if len(match) > 2 {
-				language = match[3]
+			if len(match) > 6 {
+				language = match[6]
 			}
 			if language == "" {
 				language = "jpn"
 			}
-			fmt.Println("Episode:", i, "Link:", match[1], "Quality:", quality, "Language:", language, "Size:", file_size)
+
+			fmt.Println("Episode:", i, "Link:", link, "Quality:", quality, "Language:", language, "Size:", file_size)
 
 			lang_episode_map[language] = append(lang_episode_map[language], Episode{Url: match[1], Number: i, Quality: quality, FileSize: file_size})
 		}
@@ -343,8 +347,7 @@ func FetchEpisodeLinksWithGoRoutine(animeId string, episode_ids map[int]string) 
 	}
 
 	// fmt.Printf("%+v", lang_episode_map)
-	// log.Default().Printf("%v", lang_episode_map)
-
+	log.Default().Printf("lang_episode_map: \n%v", lang_episode_map)
 	return lang_episode_map
 
 }

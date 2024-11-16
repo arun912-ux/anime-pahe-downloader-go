@@ -19,6 +19,77 @@ func getAsOptions(pahe_response []SearchResponse) []string {
 	return options
 }
 
+func promptAndSelectAvailableLanguage(episode_links map[string][]Episode) string {
+
+	languages := make([]string, 0, len(episode_links))
+	for k := range episode_links {
+		languages = append(languages, k)
+	}
+
+	fmt.Println("Languages: ", languages)
+
+	// display options to select language
+	prompt := promptui.Select{
+		Label: "Select a Language",
+		Items: languages,
+	}
+	_, language, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+
+	return language
+}
+
+func getAvailableQualityOptions(episode_link []Episode) []string {
+	quality := make(map[string]int)
+
+	for _, episode := range episode_link {
+		quality[episode.Quality] = 1
+	}
+
+	// fmt.Println("Quality : ", quality)
+
+	keys := []string{}
+	for key, _ := range quality {
+		keys = append(keys, key)
+	}
+
+	// fmt.Println("Quality Keys :", keys)
+	return keys
+}
+
+func promptAndSelectAvailableQuality(qualities []string) string {
+
+	// display options to select quality
+	prompt := promptui.Select{
+		Label: "Select a Quality",
+		Items: qualities,
+	}
+
+	_, quality, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+
+	// fmt.Println("Selected Quality: ", quality)
+
+	return quality
+
+}
+
+func filterEpisodes(episode_list []Episode, quality string) []Episode {
+
+	filteredEpisodes := []Episode{}
+
+	for _, episode := range episode_list {
+		if episode.Quality == quality {
+			filteredEpisodes = append(filteredEpisodes, episode)
+		}
+	}
+	return filteredEpisodes
+}
+
 func main() {
 
 	// current_directory, _ := os.Getwd()
@@ -28,7 +99,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	var input_anime string = scanner.Text()
-	
+
 	// search for anime
 	pahe_response, size := SearchAnime(input_anime)
 	if size == 0 {
@@ -36,10 +107,10 @@ func main() {
 		return
 	}
 
-	// display options to select
+	// display options to select anime
 	options := getAsOptions(pahe_response)
-	prompt :=promptui.Select{
-		Label: "Select an option",
+	prompt := promptui.Select{
+		Label: "Select an Anime",
 		Items: options,
 	}
 	index, _, err := prompt.Run()
@@ -49,7 +120,7 @@ func main() {
 	}
 
 	selected_anime := pahe_response[index]
-	
+
 	var anime_id string = selected_anime.Id
 	// episode_count := selected_anime.Episodes
 
@@ -58,10 +129,10 @@ func main() {
 
 	// display selected anime
 	fmt.Println("\033[35m" + selected_anime.Title + " - " + fmt.Sprint(selected_anime.Year))
-	fmt.Println("\033[36m" + "Type: ", selected_anime.Type_)
-	fmt.Println("\033[33m" + "Episodes: ", selected_anime.Episodes, "(" + fmt.Sprint(first_episode_number) + "-" + fmt.Sprint(latest_episode) + ")")
-	fmt.Println("\033[32m" + "Status: ", selected_anime.Status)
-	fmt.Println("\033[0m" + "Score: ", selected_anime.Score)
+	fmt.Println("\033[36m"+"Type: ", selected_anime.Type_)
+	fmt.Println("\033[33m"+"Episodes: ", selected_anime.Episodes, "("+fmt.Sprint(first_episode_number)+"-"+fmt.Sprint(latest_episode)+")")
+	fmt.Println("\033[32m"+"Status: ", selected_anime.Status)
+	fmt.Println("\033[0m"+"Score: ", selected_anime.Score)
 	fmt.Printf("\n\n")
 
 	if selected_anime.Episodes == 0 {
@@ -90,7 +161,7 @@ func main() {
 	}
 
 	fmt.Println("Selected Episode Range: ", episode_range)
-	
+
 	// fetch episode ids
 	// var episode_ids map[int]string = FetchEpisodeIds(anime_id, episode_range)
 	var episode_ids map[int]string = FetchEpisodeIdsWithGoRoutine(anime_id, episode_range)
@@ -101,26 +172,18 @@ func main() {
 	// fetch episode links
 	// episode_links := FetchEpisodeLinks(anime_id, episode_ids)
 	episode_links := FetchEpisodeLinksWithGoRoutine(anime_id, episode_ids)
-	jpn_episodes := episode_links["jpn"]
-	fmt.Println("Episode Links: size: ", len(jpn_episodes))
 
-	// fmt.Println("Episode Links: ", episode_links)
+	// select language from available list
+	selected_language := promptAndSelectAvailableLanguage(episode_links)
+	fmt.Println("Selected Language: ", selected_language)
 
-	// for lang, episode := range episode_links {
-	// 	fmt.Println(lang)
-	// 	for _, ep := range episode {
-	// 		fmt.Println(ep)
-	// 	}
-	// }
+	// display and select quality from available list
+	var quality_options []string = getAvailableQualityOptions(episode_links[selected_language])
+	selected_quality := promptAndSelectAvailableQuality(quality_options)
+	fmt.Println("Selected Quality:", selected_quality)
 
-	ep_count := 0
-	for _, ep := range jpn_episodes {
-		if (ep.Quality == "720p") {
-			ep_count += 1
-		}
-	}
+	// filter Episode based on language and Quality
+	episode_list := filterEpisodes(episode_links[selected_language], selected_quality)
+	fmt.Println("Final Episodes: ", episode_list)
 
-	fmt.Println("Episode count: ", ep_count)
 }
-
-
