@@ -1,2 +1,4 @@
 build/
-build.sh
+.vscode
+test1/
+test

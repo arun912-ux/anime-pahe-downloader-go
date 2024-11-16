@@ -14,4 +14,5 @@ Run the executable
 ## Credits
 
 Thanks to [AnimePahe](https://animepahe.ru) for providing such a wonderful website for anime enthusiasts
-Thanks to [IsNoobgrammer](https://github.com/IsNoobgrammer) for their [AnimeDownloader](https://github.com/IsNoobgrammer/AnimeDownloader) which was a huge inspiration for this project.
+
+Thanks to [IsNoobgrammer](https://github.com/IsNoobgrammer) for their [AnimeDownloader](https://github.com/IsNoobgrammer/AnimeDownloader) repository, which is a huge inspiration for this project.
