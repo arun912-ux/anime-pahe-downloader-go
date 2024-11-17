@@ -18,6 +18,14 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          path: ./build/*
+          name: animepahe-downloader
+          path: |
+            ./build/animepahe-downloader-darwin-arm64
+            ./build/animepahe-downloader-darwin-amd64
+            ./build/animepahe-downloader-windows-amd64.exe
+            ./build/animepahe-downloader-windows-arm64.exe
+            ./build/animepahe-downloader-linux-amd64
+            ./build/animepahe-downloader-linux-arm64
+      
         
 

@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 var host string = "https://animepahe.ru/"
@@ -163,6 +164,7 @@ func FetchEpisodeLinks(animeId string, episode_ids map[int]string) map[string][]
 	episode_links := make(map[int]string)
 
 	lang_episode_map := make(map[string][]Episode)
+	var wg sync.WaitGroup
 
 	for i, episode_id := range episode_ids {
 		url := host + "play/" + animeId + "/" + episode_id
@@ -174,12 +176,19 @@ func FetchEpisodeLinks(animeId string, episode_ids map[int]string) map[string][]
 		// }
 
 		response_channel := make(chan string, num_of_cores)
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			body, err := makeRequest(url)
 			if err != nil {
 				fmt.Println("Error retrieving episodes link : ", err)
 			}
 			response_channel <- string(body)
+		}()
+
+		go func ()  {
+			wg.Wait()
+			close(response_channel)
 		}()
 
 		// html_body := string(body)
@@ -250,7 +259,7 @@ func FetchEpisodeIdsWithGoRoutine(anime_id string, episode_range [2]int) map[int
 
 	for i := pages[0] - 1; i <= pages[1]+1; i++ {
 
-		fmt.Println("Page: ", i)
+		// fmt.Println("Page: ", i)
 
 		url := host + "api?m=release&id=" + anime_id + "&sort=episode_asc&page=" + fmt.Sprint(i)
 
@@ -284,6 +293,8 @@ func FetchEpisodeIdsWithGoRoutine(anime_id string, episode_range [2]int) map[int
 
 	}
 
+	defer close(response_channel)
+
 	// fmt.Println("Episode Map : ", episode_id_number_map)
 
 	return episode_id_number_map
@@ -297,13 +308,16 @@ func FetchEpisodeLinksWithGoRoutine(animeId string, episode_ids map[int]string) 
 
 	lang_episode_map := make(map[string][]Episode)
 
+	var wg sync.WaitGroup
 	response_channel := make(chan string, num_of_cores)
 
 	for i, episode_id := range episode_ids {
 		url := host + "play/" + animeId + "/" + episode_id
 		episode_links[i] = url
 
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			body, err := makeRequest(url)
 			if err != nil {
 				fmt.Println("Error retrieving episodes link : ", err)
@@ -312,11 +326,16 @@ func FetchEpisodeLinksWithGoRoutine(animeId string, episode_ids map[int]string) 
 		}()
 	}
 
+	go func() {
+		wg.Wait()
+		close(response_channel)
+	}()
+
+	pattern := `href="(?:([^\"]+)" target="_blank" class="dropdown-item">(?:[^\&]+)&middot; (\d{3,}p) \((\d+(MB|GB))\))(?: <span class="badge badge-primary">([^\<]+)<\/span>)?(?: <span class="badge badge-warning text-capitalize">([a-zA-Z]+))?`
+	regex := regexp.MustCompile(pattern)
 	for i := range episode_ids {
 		// html_body := string(body)
 		html_body := <-response_channel
-		pattern := `href="(?:([^\"]+)" target="_blank" class="dropdown-item">(?:[^\&]+)&middot; (\d{3,}p) \((\d+(MB|GB))\))(?: <span class="badge badge-primary">([^\<]+)<\/span>)?(?: <span class="badge badge-warning text-capitalize">([a-zA-Z]+))?`
-		regex := regexp.MustCompile(pattern)
 
 		matches := regex.FindAllStringSubmatch(html_body, -1)
 
@@ -336,18 +355,78 @@ func FetchEpisodeLinksWithGoRoutine(animeId string, episode_ids map[int]string) 
 				language = "jpn"
 			}
 
-			fmt.Println("Episode:", i, "Link:", link, "Quality:", quality, "Language:", language, "Size:", file_size)
+			// fmt.Println("Episode:", i, "Link:", link, "Quality:", quality, "Language:", language, "Size:", file_size)
 
-			lang_episode_map[language] = append(lang_episode_map[language], Episode{Url: match[1], Number: i, Quality: quality, FileSize: file_size})
+			lang_episode_map[language] = append(lang_episode_map[language], Episode{Url: link, Number: i, Quality: quality, FileSize: file_size})
 		}
-		fmt.Println()
+		// fmt.Println()
 
 		// map[lang][]Episode
 
 	}
 
 	// fmt.Printf("%+v", lang_episode_map)
-	log.Default().Printf("lang_episode_map: \n%v", lang_episode_map)
+	// log.Default().Printf("lang_episode_map: \n%v", lang_episode_map)
 	return lang_episode_map
 
 }
+
+
+
+
+func GetRedirectLinks(episode_list []Episode) []Episode {
+
+	// redirect_links := []string{}
+	redirect_episodes := make([]Episode, 0, len(episode_list))
+
+	var wg sync.WaitGroup
+	response_channel := make(chan string)
+	for _, episode := range episode_list {
+
+		link := episode.Url
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			body, err := makeRequest(link)
+			if err != nil {
+				fmt.Println("Error getting redirected link")
+			}
+			response_channel <- string(body)
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(response_channel)
+	}()
+
+	pattern := `https://kwik\.[a-z]+/[^"]+`
+	regex := regexp.MustCompile(pattern)
+
+
+	for _, episode := range episode_list {
+
+		body := <- response_channel
+
+		// fmt.Println("Redirected link html : ", body);
+		matches := regex.FindAllStringSubmatch(body, -1)
+
+		// fmt.Println("Matches : ", matches)
+		episode := Episode{Url: matches[0][0], Number: episode.Number, Quality: episode.Quality, FileSize: episode.FileSize}
+		redirect_episodes = append(redirect_episodes, episode)
+
+	}
+
+	// for body := range response_channel {
+	// 	// fmt.Println("Redirected link html : ", body);
+	// 	matches := regex.FindAllStringSubmatch(body, -1)
+
+	// 	// fmt.Println("Matches : ", matches)
+	// 	redirect_links = append(redirect_links, matches[0][0])
+	// }
+
+	// return redirect_links
+	return redirect_episodes
+
+}
+

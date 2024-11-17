@@ -10,85 +10,6 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func getAsOptions(pahe_response []SearchResponse) []string {
-	var options []string
-	for _, anime := range pahe_response {
-		var details string = anime.Title + " - " + anime.Type_ + " (" + fmt.Sprint(anime.Year) + ")"
-		options = append(options, details)
-	}
-	return options
-}
-
-func promptAndSelectAvailableLanguage(episode_links map[string][]Episode) string {
-
-	languages := make([]string, 0, len(episode_links))
-	for k := range episode_links {
-		languages = append(languages, k)
-	}
-
-	fmt.Println("Languages: ", languages)
-
-	// display options to select language
-	prompt := promptui.Select{
-		Label: "Select a Language",
-		Items: languages,
-	}
-	_, language, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	}
-
-	return language
-}
-
-func getAvailableQualityOptions(episode_link []Episode) []string {
-	quality := make(map[string]int)
-
-	for _, episode := range episode_link {
-		quality[episode.Quality] = 1
-	}
-
-	// fmt.Println("Quality : ", quality)
-
-	keys := []string{}
-	for key, _ := range quality {
-		keys = append(keys, key)
-	}
-
-	// fmt.Println("Quality Keys :", keys)
-	return keys
-}
-
-func promptAndSelectAvailableQuality(qualities []string) string {
-
-	// display options to select quality
-	prompt := promptui.Select{
-		Label: "Select a Quality",
-		Items: qualities,
-	}
-
-	_, quality, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	}
-
-	// fmt.Println("Selected Quality: ", quality)
-
-	return quality
-
-}
-
-func filterEpisodes(episode_list []Episode, quality string) []Episode {
-
-	filteredEpisodes := []Episode{}
-
-	for _, episode := range episode_list {
-		if episode.Quality == quality {
-			filteredEpisodes = append(filteredEpisodes, episode)
-		}
-	}
-	return filteredEpisodes
-}
 
 func main() {
 
@@ -108,7 +29,7 @@ func main() {
 	}
 
 	// display options to select anime
-	options := getAsOptions(pahe_response)
+	options := GetAsOptions(pahe_response)
 	prompt := promptui.Select{
 		Label: "Select an Anime",
 		Items: options,
@@ -165,25 +86,44 @@ func main() {
 	// fetch episode ids
 	// var episode_ids map[int]string = FetchEpisodeIds(anime_id, episode_range)
 	var episode_ids map[int]string = FetchEpisodeIdsWithGoRoutine(anime_id, episode_range)
-	fmt.Println("Episode IDs: ", episode_ids)
+	fmt.Println("Episode IDs have been fetched ", len(episode_ids))
 
 
 
 	// fetch episode links
 	// episode_links := FetchEpisodeLinks(anime_id, episode_ids)
 	episode_links := FetchEpisodeLinksWithGoRoutine(anime_id, episode_ids)
+	fmt.Println("Episode Links have been fetched ", len(episode_links["jpn"]))
 
 	// select language from available list
-	selected_language := promptAndSelectAvailableLanguage(episode_links)
+	selected_language := PromptAndSelectAvailableLanguage(episode_links)
 	fmt.Println("Selected Language: ", selected_language)
 
 	// display and select quality from available list
-	var quality_options []string = getAvailableQualityOptions(episode_links[selected_language])
-	selected_quality := promptAndSelectAvailableQuality(quality_options)
+	var quality_options []string = GetAvailableQualityOptions(episode_links[selected_language])
+	selected_quality := PromptAndSelectAvailableQuality(quality_options)
 	fmt.Println("Selected Quality:", selected_quality)
 
 	// filter Episode based on language and Quality
-	episode_list := filterEpisodes(episode_links[selected_language], selected_quality)
-	fmt.Println("Final Episodes: ", episode_list)
+	episode_list := FilterEpisodes(episode_links[selected_language], selected_quality)
+	// fmt.Println("Final Episodes: ", episode_list)
+
+
+	// get redirect link
+	redirected_links := GetRedirectLinks(episode_list);
+	fmt.Println("Redirected Links have been fetched ", len(redirected_links))
+	fmt.Println("Redirected Links: ", redirected_links)
+
+	fmt.Println("Now to decode...")
+	// episode_with_download_links := GetDownloadLinksFromRedirectedLinks(redirected_links)
+	// fmt.Println("Download Links have been fetched ", episode_with_download_links)
+
+
+	download__ep_url := IterateOverEpisodes(redirected_links)
+	fmt.Println("Download Links have been fetched ", len(download__ep_url))
+
+
+
+
 
 }
