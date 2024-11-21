@@ -10,7 +10,6 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-
 func main() {
 
 	// current_directory, _ := os.Getwd()
@@ -36,8 +35,8 @@ func main() {
 	}
 	index, _, err := prompt.Run()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
+		panic("Error: " + err.Error())
+		// return
 	}
 
 	selected_anime := pahe_response[index]
@@ -60,13 +59,11 @@ func main() {
 		fmt.Println("\033[31m" + "No episodes found")
 		return
 	}
-	
 
 	// ask for episode numbers
 	fmt.Print("Enter episode range (e.g. 5, " + fmt.Sprint(first_episode_number) + "-" + fmt.Sprint(latest_episode) + ", all) : ")
 	scanner.Scan()
 	var input_range string = scanner.Text()
-
 
 	episode_range := [2]int{}
 	if input_range == "" || input_range == "all" {
@@ -88,8 +85,6 @@ func main() {
 	var episode_ids map[int]string = FetchEpisodeIdsWithGoRoutine(anime_id, episode_range)
 	fmt.Println("Episode IDs have been fetched ", len(episode_ids))
 
-
-
 	// fetch episode links
 	// episode_links := FetchEpisodeLinks(anime_id, episode_ids)
 	episode_links := FetchEpisodeLinksWithGoRoutine(anime_id, episode_ids)
@@ -108,22 +103,25 @@ func main() {
 	episode_list := FilterEpisodes(episode_links[selected_language], selected_quality)
 	// fmt.Println("Final Episodes: ", episode_list)
 
-
 	// get redirect link
-	redirected_links := GetRedirectLinks(episode_list);
+	redirected_links := GetRedirectLinks(episode_list)
 	fmt.Println("Redirected Links have been fetched ", len(redirected_links))
-	fmt.Println("Redirected Links: ", redirected_links)
+	// fmt.Println("Redirected Links: ", redirected_links)
 
 	fmt.Println("Now to decode...")
 	// episode_with_download_links := GetDownloadLinksFromRedirectedLinks(redirected_links)
 	// fmt.Println("Download Links have been fetched ", episode_with_download_links)
 
+	download_ep_url := IterateOverEpisodesWithDownloadLinks(redirected_links)
+	fmt.Println("Download Links have been fetched ", len(download_ep_url))
+	fmt.Println("Download Links have been fetched ", download_ep_url)
 
-	download__ep_url := IterateOverEpisodes(redirected_links)
-	fmt.Println("Download Links have been fetched ", len(download__ep_url))
+	fmt.Println("Downloading...")
+	// create a directory
+	anime_dir := CreateDirectory(selected_anime.Title + " - " + "(" + fmt.Sprint(selected_anime.Year) + ")")
 
-
-
-
+	// download episodes
+	DownloadEpisodes(download_ep_url, selected_language, anime_dir)
+	// DownloadEpisodesWithGoRoutine(redirected_links, download__ep_url)
 
 }

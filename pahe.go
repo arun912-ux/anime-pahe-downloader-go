@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 var host string = "https://animepahe.ru/"
@@ -381,6 +383,7 @@ func GetRedirectLinks(episode_list []Episode) []Episode {
 
 	var wg sync.WaitGroup
 	response_channel := make(chan string)
+	bar := progressbar.New(len(episode_list))
 	for _, episode := range episode_list {
 
 		link := episode.Url
@@ -403,7 +406,7 @@ func GetRedirectLinks(episode_list []Episode) []Episode {
 	pattern := `https://kwik\.[a-z]+/[^"]+`
 	regex := regexp.MustCompile(pattern)
 
-
+	// bar := progressbar.New(len(episode_list))
 	for _, episode := range episode_list {
 
 		body := <- response_channel
@@ -415,6 +418,7 @@ func GetRedirectLinks(episode_list []Episode) []Episode {
 		episode := Episode{Url: matches[0][0], Number: episode.Number, Quality: episode.Quality, FileSize: episode.FileSize}
 		redirect_episodes = append(redirect_episodes, episode)
 
+		bar.Add(1)
 	}
 
 	// for body := range response_channel {

@@ -86,7 +86,7 @@ func Parse_html_token_getDownloadLink(html_body string, orig_link string, httpCl
 	load, seperator := match[3], match[4]
 
 	target_url, token := step_1(data, key, load, seperator)
-	fmt.Println("Token : ", token, " Url : ", target_url)
+	// fmt.Println("Token : ", token, " Url : ", target_url)
 
 	// payload := "_token=zYCTmeU3hNE84ly3aroK9Yjv4qRepX6o7CsJy0Is"
 	payload := strings.NewReader("_token=" + token)
