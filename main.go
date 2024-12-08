@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/manifoldco/promptui"
 )
@@ -89,6 +90,7 @@ func main() {
 	// episode_links := FetchEpisodeLinks(anime_id, episode_ids)
 	episode_links := FetchEpisodeLinksWithGoRoutine(anime_id, episode_ids)
 	fmt.Println("Episode Links have been fetched ", len(episode_links["jpn"]))
+	// fmt.Println("Episode Links have been fetched ", (episode_links["jpn"]))
 
 	// select language from available list
 	selected_language := PromptAndSelectAvailableLanguage(episode_links)
@@ -101,12 +103,14 @@ func main() {
 
 	// filter Episode based on language and Quality
 	episode_list := FilterEpisodes(episode_links[selected_language], selected_quality)
-	// fmt.Println("Final Episodes: ", episode_list)
+	fmt.Println("Final Episodes: ", episode_list)
+	time.Sleep(time.Second * 5)
 
 	// get redirect link
 	redirected_links := GetRedirectLinks(episode_list)
 	fmt.Println("Redirected Links have been fetched ", len(redirected_links))
-	// fmt.Println("Redirected Links: ", redirected_links)
+	fmt.Println("Redirected Links: ", redirected_links)
+	time.Sleep(time.Second * 5)
 
 	fmt.Println("Now to decode...")
 	// episode_with_download_links := GetDownloadLinksFromRedirectedLinks(redirected_links)
@@ -123,5 +127,6 @@ func main() {
 	// download episodes
 	DownloadEpisodes(download_ep_url, selected_language, anime_dir)
 	// DownloadEpisodesWithGoRoutine(redirected_links, download__ep_url)
+	time.Sleep(time.Second * 5)
 
 }

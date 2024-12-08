@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/vbauerster/mpb"
 	"github.com/vbauerster/mpb/decor"
@@ -19,23 +20,26 @@ func DownloadEpisodes(download_url []Episode, language string, download_dir stri
 	fmt.Println("Current Directory: ", pwd)
 
 	var wg sync.WaitGroup
-	resp_chan := make(chan string, 2)
+	resp_chan := make(chan string, 4)
 	progress := mpb.New(mpb.WithWaitGroup(&wg))
 
 	// barTotal := progressbar.New(len(download_url))
 	barTotal := progress.AddBar(int64(len(download_url)),
 		mpb.BarStyle("[=> ]<+"),
-		mpb.PrependDecorators(decor.Name("Total : ")),
+		mpb.PrependDecorators(decor.Name("Total : \t\t")),
 		mpb.AppendDecorators(decor.Percentage(decor.WCSyncWidth)),
 	)
+	fmt.Println("barTotal : ", barTotal)
 
 	for _, ep := range download_url {
+
 		wg.Add(1)
 		resp_chan <- "Downloaded: " + fmt.Sprint(ep.Number) + "_" + language + "_" + ep.Quality + ".mp4 " + " from: " + ep.Url
+
 		go func() {
 			defer wg.Done()
 
-			fileName := fmt.Sprint(ep.Number) + "_" + language + "_" + ep.Quality + ".mp4"
+			fileName := fmt.Sprintf("%03d", ep.Number) + "_" + language + "_" + ep.Quality + ".mp4"
 			filePath := pwd + "/" + fileName
 			// TODO: create bars outside go routine and pass them to the go routine
 
@@ -44,31 +48,37 @@ func DownloadEpisodes(download_url []Episode, language string, download_dir stri
 			// bar := progressbar.New64(resp.ContentLength)
 			bar := progress.AddBar(int64(resp.ContentLength),
 				mpb.BarStyle("[=> ]<+"),
-
 				mpb.PrependDecorators(
-					decor.Name(fileName),
-					decor.Percentage(decor.WCSyncSpace),
+					decor.Name(fileName+"\t"),
+					// decor.Percentage(decor.WCSyncSpace),
 				),
 				mpb.AppendDecorators(
-					decor.CountersKibiByte("% .2f / % .2f    "),
+					decor.CountersKibiByte("% .2f / % .2f \t\t"),
 					decor.Percentage(decor.WCSyncWidth),
 				),
 			)
-			fmt.Println("Downloading: " + fileName + " " + "from: " + ep.Url)
-
-			SaveToFile(resp, filePath, bar)
-			// resp_chan <- "Downloading: " + fileName + " " + "from: " + ep.Url
-			<-resp_chan
-			fmt.Println("Downloading: " + fileName + " " + "from: " + ep.Url)
+			// fmt.Println("Downloading: " + fileName + " " + "from: " + ep.Url)
+			err := SaveToFile(resp, filePath, bar)
+			if err != nil {
+				fmt.Println(err)
+				panic(err)
+			}
 			barTotal.Increment()
+			// fmt.Println("Downloaded: " + fileName + " " + "from: " + ep.Url)
+			// resp_chan <- "Downloading: " + fileName + " " + "from: " + ep.Url
+			time.Sleep(500 * time.Millisecond)
+			<-resp_chan
 		}()
 	}
 
-	go func() {
-		wg.Wait()
-		close(resp_chan)
-	}()
+	// go func() {
+	// 	wg.Wait()
+	// 	close(resp_chan)
+	// }()
 
+	wg.Wait()
+	time.Sleep(2 * time.Second)
+	close(resp_chan)
 	// for resp := range resp_chan {
 	// 	fmt.Println(resp)
 	// 	barTotal.Add(1)
@@ -117,7 +127,7 @@ func SaveToFile(resp *http.Response, filePath string, progressBar *mpb.Bar) erro
 	defer file.Close()
 
 	// Set up the buffer size (2MB)
-	bufferSize := 2 * 1024 * 1024 // 2MB
+	bufferSize := 1 * 1024 * 1024 // 2MB
 	buffer := make([]byte, bufferSize)
 
 	// Total number of bytes read
@@ -138,6 +148,7 @@ func SaveToFile(resp *http.Response, filePath string, progressBar *mpb.Bar) erro
 
 		// Update the progress bar
 		totalBytesRead += int(n)
+		time.Sleep(10 * time.Microsecond)
 		progressBar.IncrBy(n)
 		// Check if we have reached the end of the file
 		if err == io.EOF {
@@ -148,6 +159,7 @@ func SaveToFile(resp *http.Response, filePath string, progressBar *mpb.Bar) erro
 	// io.MultiWriter is used to write to both the file and the progress bar
 	// io.Copy(io.MultiWriter(progressBar, file), resp.Body)
 
+	time.Sleep(1 * time.Second)
 	// Download complete
 	return nil
 }
